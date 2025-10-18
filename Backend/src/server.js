@@ -2,6 +2,8 @@ import express from "express"
 import { ENV } from "./config/env.js";
 import { db } from "./config/db.js";
 import { favoritesTable } from "./db/schema.js";
+import { and, eq } from "drizzle-orm";
+
 
 
 
@@ -37,6 +39,35 @@ app.post("/api/favorites", async (req, res) => {
 
     }
 })
+
+app.get("/api/favorites/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const userFavorites =  await db.select().from(favoritesTable).where(eq(favoritesTable.userId, userId));
+
+        res.status(200).json(userFavorites);
+    } catch (error) {
+        console.error("Error fetching the favourite:", error);
+        res.status(500).json({ error: "something went wrong" });
+    }
+})
+
+
+
+app.delete("/api/favorites/:userId/:recipeId", async (req, res) => {
+    try {
+        const { userId, recipeId } = req.params;
+
+        await db.delete(favoritesTable).where(
+            and(eq(favoritesTable.userId, userId), eq(favoritesTable.recipeId, parseInt(recipeId)))
+        );
+        res.status(200).json({ message: "Favourite removed successfully" });
+    } catch (error) {
+        console.error("Error removing a favourite:", error);
+        res.status(500).json({ error: "something went wrong" });
+    }
+})
+
 
 app.listen(5001, () => {
     console.log("Server is running on PORT:", PORT);
